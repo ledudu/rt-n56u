@@ -17,7 +17,7 @@
 #include "libev/ev.h"
 #undef _GNU_SOURCE
 
-#define DNS2TCP_VER "dns2tcp v1.1.1"
+#define DNS2TCP_VER "dns2tcp v1.1.0"
 
 #ifndef IPV6_V6ONLY
   #define IPV6_V6ONLY 26
@@ -79,7 +79,6 @@ enum {
 };
 
 static bool       g_verbose                 = false;
-static bool       g_log_queries             = false;
 static uint8_t    g_options                 = 0;
 static uint8_t    g_syn_maxcnt              = 0;
 static int        g_udp_sockfd              = -1;
@@ -189,7 +188,7 @@ static void parse_socket_addr(const void *skaddr, char *ipstr, portno_t *portno)
 }
 
 static void print_command_help(void) {
-    printf("usage: dns2tcp [-L listen] [-R remote] [-s syncnt] [-6rafvVh]\n"
+    printf("usage: dns2tcp <-L listen> <-R remote> [-s syncnt] [-6rafvVh]\n"
            " -L <ip#port>            udp listen address, this is required\n"
            " -R <ip#port>            tcp remote address, this is required\n"
            " -s <syncnt>             set TCP_SYNCNT(max) for remote socket\n"
@@ -265,7 +264,7 @@ static void parse_command_args(int argc, char *argv[]) {
 
     opterr = 0;
     int shortopt = -1;
-    const char *optstr = "L:R:s:6rafvVhq";
+    const char *optstr = "L:R:s:6rafvVh";
     while ((shortopt = getopt(argc, argv, optstr)) != -1) {
         switch (shortopt) {
             case 'L':
@@ -301,9 +300,6 @@ static void parse_command_args(int argc, char *argv[]) {
             case 'f':
                 g_options |= OPT_FAST_OPEN;
                 break;
-            case 'q':
-                g_log_queries = true;
-                break;
             case 'v':
                 g_verbose = true;
                 break;
@@ -324,14 +320,12 @@ static void parse_command_args(int argc, char *argv[]) {
     }
 
     if (strlen(opt_listen_addr) == 0) {
-        strcpy(opt_listen_addr, "0.0.0.0#54");
-        //printf("[parse_command_args] missing option: '-L'\n");
-        //goto PRINT_HELP_AND_EXIT;
+        printf("[parse_command_args] missing option: '-L'\n");
+        goto PRINT_HELP_AND_EXIT;
     }
     if (strlen(opt_remote_addr) == 0) {
-        strcpy(opt_remote_addr, "8.8.8.8#53");
-        //printf("[parse_command_args] missing option: '-R'\n");
-        //goto PRINT_HELP_AND_EXIT;
+        printf("[parse_command_args] missing option: '-R'\n");
+        goto PRINT_HELP_AND_EXIT;
     }
 
     parse_address_opt(opt_listen_addr, true);
@@ -390,20 +384,6 @@ static void udp_recvmsg_cb(evloop_t *evloop, evio_t *watcher __attribute__((unus
             LOGERR("[udp_recvmsg_cb] recv from udp socket: (%d) %s", errno, strerror(errno));
         }
         goto FREE_TCP_WATCHER;
-    }
-    if (g_log_queries) {
-        uint8_t *p = tcpw->buffer + 14;
-        char query[256], *q = query;
-        while (true) {
-            char n = *p++;
-            memcpy(q, p, n);
-            q += n;
-            p += n;
-            if (*p == 0) break;
-            *q++ = '.';
-        }
-        *q = 0;
-        printf("\e[1;32mQUERY:\e[0m %s\n", query);
     }
     IF_VERBOSE {
         portno_t portno;

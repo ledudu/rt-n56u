@@ -196,7 +196,7 @@ func_fill()
 	dir_crond="$dir_storage/cron/crontabs"
 	dir_wlan="$dir_storage/wlan"
 	dir_chnroute="$dir_storage/chinadns"
-	dir_gfwlist="$dir_storage/gfwlist"
+	#dir_gfwlist="$dir_storage/gfwlist"
 
 	script_start="$dir_storage/start_script.sh"
 	script_started="$dir_storage/started_script.sh"
@@ -219,7 +219,7 @@ func_fill()
 	user_sswan_secrets="$dir_sswan/ipsec.secrets"
 	
 	chnroute_file="/etc_ro/chnroute.bz2"
-	gfwlist_conf_file="/etc_ro/gfwlist.bz2"
+	#gfwlist_conf_file="/etc_ro/gfwlist.bz2"
 
 	# create crond dir
 	[ ! -d "$dir_crond" ] && mkdir -p -m 730 "$dir_crond"
@@ -235,11 +235,11 @@ func_fill()
 	fi
 
 	# create gfwlist
-	if [ ! -d "$dir_gfwlist" ] ; then
-		if [ -f "$gfwlist_conf_file" ]; then	
-			mkdir -p "$dir_gfwlist" && tar jxf "$gfwlist_conf_file" -C "$dir_gfwlist"
-		fi
-	fi
+	#if [ ! -d "$dir_gfwlist" ] ; then
+	#	if [ -f "$gfwlist_conf_file" ]; then	
+#			mkdir -p "$dir_gfwlist" && tar jxf "$gfwlist_conf_file" -C "$dir_gfwlist"
+	#	fi
+#	fi
 
 	# create start script
 	if [ ! -f "$script_start" ] ; then
@@ -248,7 +248,7 @@ func_fill()
 
 	# create started script
 	if [ ! -f "$script_started" ] ; then
-		cat > "$script_started" <<EOF
+		cat > "$script_started" <<'EOF'
 #!/bin/sh
 
 ### Custom user script
@@ -270,12 +270,13 @@ sync && echo 3 > /proc/sys/vm/drop_caches
 #iwpriv ra0 set AssocReqRssiThres=-80
 #iwpriv rai0 set KickStaRssiLow=-85
 #iwpriv rai0 set AssocReqRssiThres=-80
+>>>>>>> a321e6940bb0cb44619e21b8b3df6e91f892751a
 
 # Mount SATA disk
 #mdev -s
 
-#wing <HOST> 443 <PASS>
-#wing 192.168.1.9 1080
+#wing <HOST:443> <PASS>
+#wing 192.168.1.9:1080
 #ipset add gfwlist 8.8.4.4
 
 
@@ -492,6 +493,9 @@ dhcp-option=252,"\n"
 ### Log for all queries
 #log-queries
 
+### Keep DHCP host name valid at any times
+#dhcp-to-host
+
 EOF
 	if [ -f /usr/bin/vlmcsd ]; then
 		cat >> "$user_dnsmasq_conf" <<EOF
@@ -504,12 +508,9 @@ EOF
 	if [ -f /usr/bin/wing ]; then
 		cat >> "$user_dnsmasq_conf" <<EOF
 # Custom domains to gfwlist
-#server=/mit.edu/127.0.0.1#54
-#ipset=/mit.edu/gfwlist
-#server=/openwrt.org/lede-project.org/127.0.0.1#54
-#ipset=/openwrt.org/lede-project.org/gfwlist
-#server=/github.com/github.io/githubusercontent.com/127.0.0.1#54
-#ipset=/github.com/github.io/githubusercontent.com/gfwlist
+#gfwlist=mit.edu
+#gfwlist=openwrt.org,lede-project.org
+#gfwlist=github.com,github.io,githubusercontent.com
 
 EOF
 	fi
